@@ -36,7 +36,6 @@ public:
   Server(io_service& io_service, short port)
     : io_service_(io_service)
     , acceptor_(io_service, tcp::endpoint(tcp::v4(), port))
-    , socket_(io_service)
   {
     do_accept();
   }
@@ -44,17 +43,17 @@ public:
 private:
   void do_accept()
   {
-    acceptor_.async_accept(socket_,
-      [this](error_code ec)
-      {
-        // code here
-      }
-    );
+    auto client_socket = std::make_shared<tcp::socket>(io_service_);
+    acceptor_.async_accept(*client_socket, [this, client_socket](error_code ec){
+        if(!ec) {
+          co_spawn(io_service_, session(std::move(*client_socket), io_service_), boost::asio::detached);
+        }
+        do_accept();
+    });
   }
 
   io_service& io_service_;
   tcp::acceptor acceptor_;
-  tcp::socket socket_;
 };
 
 int main(int argc, char* argv[]) {
