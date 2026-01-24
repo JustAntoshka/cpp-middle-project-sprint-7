@@ -31,9 +31,7 @@ void iterHeaders(std::string_view req, Callback&& callback) {
     std::string_view name = line.substr(0, colon);
     std::string_view value = line.substr(colon + 1, end - colon - 1);
 
-    while (!value.empty() && value.front() == ' ') {
-      value.remove_prefix(1);
-    }
+    value.remove_prefix(std::min(value.find_first_not_of(" "), value.size()));
 
     callback(name, value);
   }
